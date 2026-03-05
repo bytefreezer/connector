@@ -1,8 +1,10 @@
 # ByteFreezer Connector
 
-Export data from ByteFreezer parquet files into external systems. Query your data with SQL, send only what you need to Elasticsearch, Splunk, webhooks, or any custom destination.
+A starter project for exporting data from ByteFreezer parquet files into external systems. Fork it, customize it with [Claude Code](https://claude.ai/claude-code) and the [ByteFreezer MCP server](https://github.com/bytefreezer/mcp), and fit it to your exact business case.
 
 ## Overview
+
+This is not a black-box product — it's a working codebase you own and modify. The connector ships with three destinations (stdout, Elasticsearch, webhook) and a simple `Destination` interface. Need Splunk HEC, Snowflake, Kafka, or a custom internal API? Point Claude Code at this repo with the ByteFreezer MCP connected, and it has everything it needs: the destination interface pattern, MCP tools to discover your datasets and schema, and [CLAUDE.md](CLAUDE.md) with step-by-step instructions.
 
 ByteFreezer stores all ingested data as Parquet files in S3/MinIO. The Connector reads those files using DuckDB and exports filtered subsets to external systems. Instead of sending everything to your SIEM, export only the 5% you need for active investigation.
 
