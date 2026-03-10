@@ -23,6 +23,7 @@ type Connector struct {
 	querySQL      string
 	batchSize     int
 	totalExported int64
+	s3Override    *S3Credentials
 }
 
 // NewConnector creates a new connector instance
@@ -55,6 +56,11 @@ func NewConnector(client *ControlClient, cursor *Cursor, dest Destination, tenan
 	}, nil
 }
 
+// SetS3Override sets local S3 credentials, bypassing control API query-credentials
+func (c *Connector) SetS3Override(creds *S3Credentials) {
+	c.s3Override = creds
+}
+
 // Close cleans up resources
 func (c *Connector) Close() {
 	if c.db != nil {
@@ -69,10 +75,17 @@ func (c *Connector) Close() {
 func (c *Connector) RunOnce(ctx context.Context) error {
 	log.Infof("Running export: tenant=%s, dataset=%s", c.tenantID, c.datasetID)
 
-	// Get S3 credentials from control plane
-	creds, err := c.controlClient.GetS3Credentials(ctx, c.tenantID, c.datasetID)
-	if err != nil {
-		return fmt.Errorf("failed to get S3 credentials: %w", err)
+	var creds *S3Credentials
+	var err error
+
+	if c.s3Override != nil {
+		creds = c.s3Override
+		log.Info("Using local S3 config override")
+	} else {
+		creds, err = c.controlClient.GetS3Credentials(ctx, c.tenantID, c.datasetID)
+		if err != nil {
+			return fmt.Errorf("failed to get S3 credentials: %w", err)
+		}
 	}
 
 	// Configure DuckDB S3 access
@@ -81,7 +94,7 @@ func (c *Connector) RunOnce(ctx context.Context) error {
 	}
 
 	// Build the parquet path
-	parquetPath := fmt.Sprintf("s3://%s/%s/%s/data/parquet/**/*.parquet",
+	parquetPath := fmt.Sprintf("s3://%s/%s/%s/data/parquet/**/*.parquet*",
 		creds.Bucket, c.tenantID, c.datasetID)
 
 	// Replace PARQUET_PATH placeholder in SQL if present
@@ -245,11 +258,16 @@ func (c *Connector) GetParquetPath(ctx context.Context) (string, error) {
 }
 
 func (c *Connector) configureS3(creds *S3Credentials) error {
+	// DuckDB s3_endpoint expects host:port without scheme
+	endpoint := creds.Endpoint
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
+
 	settings := map[string]string{
 		"s3_access_key_id":     creds.AccessKey,
 		"s3_secret_access_key": creds.SecretKey,
 		"s3_region":            creds.Region,
-		"s3_endpoint":          creds.Endpoint,
+		"s3_endpoint":          endpoint,
 		"s3_use_ssl":           "false",
 		"s3_url_style":         "path",
 	}

@@ -20,11 +20,28 @@ type Config struct {
 	Logging         LoggingConfig         `mapstructure:"logging"`
 	Server          ServerConfig          `mapstructure:"server"`
 	Control         ControlConfig         `mapstructure:"control"`
+	S3              S3Config              `mapstructure:"s3"`
 	HealthReporting HealthReportingConfig `mapstructure:"health_reporting"`
 	Query           QueryConfig           `mapstructure:"query"`
 	Destination     DestinationConfig     `mapstructure:"destination"`
 	Cursor          CursorConfig          `mapstructure:"cursor"`
 	Schedule        ScheduleConfig        `mapstructure:"schedule"`
+}
+
+// S3Config allows direct S3 credentials for on-prem deployments
+// When set, bypasses control API query-credentials endpoint
+type S3Config struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	Bucket    string `mapstructure:"bucket"`
+	Region    string `mapstructure:"region"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	UseSSL    bool   `mapstructure:"use_ssl"`
+}
+
+// HasS3Override returns true if local S3 config is provided
+func (cfg *Config) HasS3Override() bool {
+	return cfg.S3.Endpoint != "" && cfg.S3.Bucket != ""
 }
 
 type AppConfig struct {

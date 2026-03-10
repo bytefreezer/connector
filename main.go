@@ -102,6 +102,10 @@ func runBatch(ctx context.Context, cfg *config.Config, client *connector.Control
 	}
 	defer conn.Close()
 
+	if cfg.HasS3Override() {
+		conn.SetS3Override(s3OverrideFromConfig(cfg))
+	}
+
 	if err := conn.RunOnce(ctx); err != nil {
 		log.Fatalf("Export failed: %v", err)
 	}
@@ -127,6 +131,10 @@ func runWatch(ctx context.Context, cfg *config.Config, client *connector.Control
 		log.Fatalf("Failed to create connector: %v", err)
 	}
 	defer conn.Close()
+
+	if cfg.HasS3Override() {
+		conn.SetS3Override(s3OverrideFromConfig(cfg))
+	}
 
 	// Register with control plane
 	instanceID := connector.BuildInstanceID()
@@ -431,6 +439,17 @@ func healthReportingLoop(ctx context.Context, client *connector.ControlClient, i
 			}
 			client.SendHealthReport(ctx, instanceID, fmt.Sprintf("http://localhost:%d", cfg.Server.Port), true, "healthy", metrics)
 		}
+	}
+}
+
+func s3OverrideFromConfig(cfg *config.Config) *connector.S3Credentials {
+	return &connector.S3Credentials{
+		Endpoint:  cfg.S3.Endpoint,
+		Bucket:    cfg.S3.Bucket,
+		Region:    cfg.S3.Region,
+		AccessKey: cfg.S3.AccessKey,
+		SecretKey: cfg.S3.SecretKey,
+		UseSSL:    cfg.S3.UseSSL,
 	}
 }
 
