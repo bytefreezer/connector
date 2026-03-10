@@ -168,6 +168,10 @@ func runInteractive(ctx context.Context, cfg *config.Config, client *connector.C
 	}
 	defer conn.Close()
 
+	if cfg.HasS3Override() {
+		conn.SetS3Override(s3OverrideFromConfig(cfg))
+	}
+
 	// Register with control plane
 	instanceID := connector.BuildInstanceID()
 	client.RegisterService(ctx, instanceID, fmt.Sprintf("http://localhost:%d", cfg.Server.Port), map[string]any{
@@ -215,24 +219,31 @@ func setupInteractiveRoutes(mux *http.ServeMux, cfg *config.Config, client *conn
 		}
 
 		type datasetInfo struct {
-			TenantID   string `json:"tenant_id"`
-			TenantName string `json:"tenant_name"`
-			DatasetID  string `json:"dataset_id"`
-			Name       string `json:"name"`
+			TenantID    string `json:"tenant_id"`
+			TenantName  string `json:"tenant_name"`
+			DatasetID   string `json:"dataset_id"`
+			Name        string `json:"name"`
+			ParquetPath string `json:"parquet_path"`
 		}
 		var all []datasetInfo
 
+		bucket := conn.GetS3Bucket()
 		for _, t := range tenants {
 			datasets, err := client.GetDatasets(r.Context(), t.ID)
 			if err != nil {
 				continue
 			}
 			for _, d := range datasets {
+				ppath := ""
+				if bucket != "" {
+					ppath = conn.BuildParquetPath(bucket, t.ID, d.ID)
+				}
 				all = append(all, datasetInfo{
-					TenantID:   t.ID,
-					TenantName: t.Name,
-					DatasetID:  d.ID,
-					Name:       d.Name,
+					TenantID:    t.ID,
+					TenantName:  t.Name,
+					DatasetID:   d.ID,
+					Name:        d.Name,
+					ParquetPath: ppath,
 				})
 			}
 		}

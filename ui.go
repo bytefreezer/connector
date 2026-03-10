@@ -244,7 +244,7 @@ kbd {
       <!-- SQL editor -->
       <div>
         <span class="card-label">SQL Query</span>
-        <textarea id="sqlInput" placeholder="SELECT * FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) LIMIT 100"></textarea>
+        <textarea id="sqlInput" placeholder="Select a dataset to auto-fill the query, or write your own SQL"></textarea>
         <div class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to execute</div>
       </div>
 
@@ -320,7 +320,7 @@ kbd {
         <h4>How It Works</h4>
         <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
           <p>This connector queries your parquet files using DuckDB over S3 and exports results to your destination.</p>
-          <p style="margin-top:8px;"><strong style="color:var(--text-primary);">PARQUET_PATH</strong> is auto-replaced with the S3 glob path for the selected dataset.</p>
+          <p style="margin-top:8px;">Select a dataset and the S3 parquet path is resolved automatically. Edit the SQL to filter or aggregate as needed.</p>
           <p style="margin-top:8px;">Use <strong style="color:var(--text-primary);">batch</strong> mode for one-off exports or <strong style="color:var(--text-primary);">watch</strong> mode for continuous delivery.</p>
         </div>
       </div>
@@ -331,7 +331,10 @@ kbd {
 <script>
 let selectedTenantId = '';
 let selectedDatasetId = '';
+let selectedParquetPath = '';
 let schemaVisible = false;
+
+const defaultSQL = (path) => "SELECT * FROM read_parquet('" + path + "', hive_partitioning=true, union_by_name=true) LIMIT 100";
 
 const destFields = {
   stdout: [],
@@ -354,7 +357,7 @@ async function loadDatasets() {
     if (data.error) { select.innerHTML = '<option>Error: ' + esc(data.error) + '</option>'; return; }
     if (!data.datasets || data.datasets.length === 0) { select.innerHTML = '<option>No datasets found</option>'; return; }
     select.innerHTML = '<option value="">Select a dataset...</option>' +
-      data.datasets.map(d => '<option value="' + d.dataset_id + '" data-tenant="' + d.tenant_id + '" data-name="' + esc(d.name) + '">' +
+      data.datasets.map(d => '<option value="' + d.dataset_id + '" data-tenant="' + d.tenant_id + '" data-name="' + esc(d.name) + '" data-path="' + esc(d.parquet_path || '') + '">' +
         esc(d.name) + ' (' + esc(d.tenant_name) + ')</option>').join('');
   } catch (e) {
     document.getElementById('datasetSelect').innerHTML = '<option>Failed to load: ' + esc(e.message) + '</option>';
@@ -366,13 +369,27 @@ function onDatasetChange() {
   selectedDatasetId = select.value;
   const opt = select.options[select.selectedIndex];
   selectedTenantId = opt ? opt.dataset.tenant : '';
+  selectedParquetPath = opt ? (opt.dataset.path || '') : '';
   document.getElementById('executeBtn').disabled = !selectedDatasetId;
   document.getElementById('results').innerHTML = '';
   document.getElementById('resultsWrap').style.display = 'none';
   document.getElementById('queryStats').style.display = 'none';
   document.getElementById('queryError').style.display = 'none';
   document.getElementById('schemaToggle').style.display = selectedDatasetId ? 'inline' : 'none';
+  if (selectedDatasetId && selectedParquetPath) {
+    document.getElementById('sqlInput').value = defaultSQL(selectedParquetPath);
+    updateExampleQueries(selectedParquetPath);
+  }
   if (selectedDatasetId) loadSchema();
+}
+
+function updateExampleQueries(path) {
+  const section = document.getElementById('examplesSection');
+  section.innerHTML = '<h4>Example queries</h4>' +
+    '<button class="example-btn" onclick="setQuery(this.textContent)">SELECT * FROM read_parquet(\'' + path + '\', hive_partitioning=true, union_by_name=true) LIMIT 100</button>' +
+    '<button class="example-btn" onclick="setQuery(this.textContent)">SELECT COUNT(*) as total FROM read_parquet(\'' + path + '\', hive_partitioning=true, union_by_name=true)</button>' +
+    '<button class="example-btn" onclick="setQuery(this.textContent)">SELECT year, month, day, hour, COUNT(*) as count FROM read_parquet(\'' + path + '\', hive_partitioning=true, union_by_name=true) GROUP BY year, month, day, hour ORDER BY year, month, day, hour</button>' +
+    '<button class="example-btn" onclick="setQuery(this.textContent)">SELECT DISTINCT source_ip, COUNT(*) as hits FROM read_parquet(\'' + path + '\', hive_partitioning=true, union_by_name=true) GROUP BY source_ip ORDER BY hits DESC LIMIT 20</button>';
 }
 
 async function loadSchema() {

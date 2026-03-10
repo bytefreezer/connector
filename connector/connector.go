@@ -61,6 +61,19 @@ func (c *Connector) SetS3Override(creds *S3Credentials) {
 	c.s3Override = creds
 }
 
+// GetS3Bucket returns the configured S3 bucket name (from override or empty if not set)
+func (c *Connector) GetS3Bucket() string {
+	if c.s3Override != nil {
+		return c.s3Override.Bucket
+	}
+	return ""
+}
+
+// BuildParquetPath returns the S3 parquet glob path for a given tenant/dataset
+func (c *Connector) BuildParquetPath(bucket, tenantID, datasetID string) string {
+	return fmt.Sprintf("s3://%s/%s/%s/data/parquet/**/*.parquet*", bucket, tenantID, datasetID)
+}
+
 // Close cleans up resources
 func (c *Connector) Close() {
 	if c.db != nil {
