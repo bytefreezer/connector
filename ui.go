@@ -7,108 +7,342 @@ const interactiveHTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ByteFreezer Connector</title>
 <style>
-* { box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
-.container { max-width: 1000px; margin: 0 auto; }
-h1 { color: #3b82f6; margin-bottom: 8px; font-size: 1.5rem; }
-.subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
-.panel { background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-.panel h3 { margin: 0 0 12px 0; color: #e2e8f0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-select, input[type="text"], textarea {
-  width: 100%; padding: 10px 12px; font-size: 14px;
-  background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
-  border-radius: 6px; outline: none; margin-bottom: 12px;
+:root {
+  --bg-primary: #0f172a;
+  --bg-card: #1e293b;
+  --bg-input: #0f172a;
+  --bg-header: #334155;
+  --bg-hover: rgba(59,130,246,0.08);
+  --border: #334155;
+  --border-focus: #3b82f6;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --success: #10b981;
+  --success-bg: rgba(16,185,129,0.1);
+  --error: #ef4444;
+  --error-bg: rgba(239,68,68,0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245,158,11,0.1);
 }
-select:focus, input:focus, textarea:focus { border-color: #3b82f6; }
-textarea { font-family: 'Monaco', 'Menlo', monospace; min-height: 80px; resize: vertical; }
-.btn { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; margin-right: 8px; }
-.btn:hover { background: #3b82f6; }
-.btn:disabled { background: #334155; cursor: not-allowed; }
-.btn-green { background: #059669; }
-.btn-green:hover { background: #10b981; }
-.btn-secondary { background: #334155; }
-.btn-secondary:hover { background: #475569; }
-.results-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
-.results-table th, .results-table td { padding: 8px 12px; border: 1px solid #334155; text-align: left; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.results-table th { background: #334155; font-weight: 600; position: sticky; top: 0; }
-.results-table tr:hover { background: #1e293b; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+/* Layout */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.header h1 { font-size: 18px; font-weight: 600; }
+.header p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.main { display: flex; flex: 1; min-height: 0; }
+.content { flex: 1; padding: 24px; overflow-y: auto; max-width: 1200px; }
+.sidebar {
+  width: 320px; min-width: 320px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-card);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.card-header svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
+.card-header h3 { font-size: 14px; font-weight: 600; }
+.card-label {
+  display: block; font-size: 11px; font-weight: 500;
+  color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px;
+}
+
+/* Form elements */
+select, input[type="text"], textarea {
+  width: 100%; padding: 8px 12px; font-size: 13px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text-primary); border-radius: 6px; outline: none;
+  transition: border-color 0.15s;
+}
+select:focus, input:focus, textarea:focus { border-color: var(--border-focus); }
+select:disabled, input:disabled, textarea:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+textarea {
+  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 12px; resize: vertical; min-height: 100px;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; font-size: 13px; font-weight: 500;
+  border: none; border-radius: 6px; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { background: var(--bg-header); color: var(--text-muted); cursor: not-allowed; }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #059669; }
+.btn-secondary { background: var(--bg-header); color: var(--text-secondary); }
+.btn-secondary:hover { background: #475569; color: var(--text-primary); }
+.btn-group { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Stats bar */
+.stats-bar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 0; font-size: 13px; color: var(--text-secondary);
+}
+.stats-bar .stat { display: flex; align-items: center; gap: 4px; }
+.stats-bar svg { width: 14px; height: 14px; }
+
+/* Results table — matches query page */
+.results-wrap {
+  border: 1px solid var(--border); border-radius: 8px;
+  overflow: auto; max-height: 480px; margin-top: 12px;
+}
+.results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.results-table thead { position: sticky; top: 0; z-index: 1; }
+.results-table th {
+  padding: 10px 14px; text-align: left; font-size: 11px;
+  font-weight: 600; color: var(--text-secondary);
+  background: var(--bg-header); white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.results-table td {
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  max-width: 280px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: 13px; color: var(--text-primary);
+}
+.results-table tr:hover td { background: var(--bg-hover); }
 .results-table td:hover { white-space: normal; word-break: break-all; }
-.error { color: #ff6b6b; padding: 12px; background: #2d1f1f; border-radius: 6px; margin-top: 12px; border: 1px solid #5c2a2a; }
-.stats { color: #94a3b8; font-size: 13px; margin: 8px 0; }
-.stats span { margin-right: 16px; }
-.results-container { max-height: 400px; overflow: auto; border-radius: 6px; }
-.row { display: flex; gap: 12px; }
-.row > * { flex: 1; }
-.step-badge { display: inline-block; background: #334155; color: #94a3b8; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
-.step-badge.active { background: #2563eb; color: white; }
-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+.results-table .null { color: var(--text-muted); font-style: italic; }
+.results-empty {
+  padding: 48px 16px; text-align: center; color: var(--text-muted);
+  background: var(--bg-card);
+}
+.results-empty svg { width: 40px; height: 40px; margin: 0 auto 8px; opacity: 0.4; }
+
+/* Alerts */
+.alert {
+  padding: 12px 14px; border-radius: 6px; font-size: 13px;
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 12px;
+}
+.alert svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+.alert-error { background: var(--error-bg); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+.alert-success { background: var(--success-bg); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+.alert-info { background: var(--warning-bg); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
-.success { color: #10b981; padding: 12px; background: #1a2d1f; border-radius: 6px; margin-top: 12px; border: 1px solid #2a5c3a; }
+
+/* Example queries */
+.examples { margin-top: 16px; }
+.examples h4 {
+  font-size: 11px; font-weight: 500; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.example-btn {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 12px; margin-bottom: 6px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-secondary);
+  font-size: 12px; cursor: pointer; transition: all 0.15s;
+}
+.example-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+/* Sidebar sections */
+.sidebar-section { }
+.sidebar-section h4 {
+  font-size: 11px; font-weight: 500; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.sidebar-section select, .sidebar-section input { margin-bottom: 8px; }
+.sidebar-divider { border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* Schema panel */
+.schema-list { font-size: 12px; }
+.schema-list .col {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid rgba(51,65,85,0.5);
+}
+.schema-list .col-name { color: var(--text-primary); font-family: 'SF Mono', monospace; font-size: 12px; }
+.schema-list .col-type { color: var(--text-muted); font-size: 11px; }
+
+/* Keyboard hint */
+.kbd-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+kbd {
+  background: var(--bg-header); border: 1px solid var(--border);
+  border-radius: 3px; padding: 1px 5px; font-size: 10px;
+  font-family: inherit;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main { flex-direction: column; }
+  .sidebar { width: 100%; min-width: 0; border-left: none; border-top: 1px solid var(--border); }
+}
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>ByteFreezer Connector</h1>
-  <p class="subtitle">Explore data, craft queries, test destinations, export subsets</p>
-
-  <!-- Step 1: Select Dataset -->
-  <div class="panel">
-    <h3>1. Select Dataset <span class="step-badge active" id="step1badge">select</span></h3>
-    <select id="datasetSelect" onchange="onDatasetChange()">
-      <option value="">Loading datasets...</option>
-    </select>
+<div class="app">
+  <div class="header">
+    <h1>Query</h1>
+    <p>Search and export your data with DuckDB</p>
   </div>
 
-  <!-- Step 2: Write & Preview Query -->
-  <div class="panel">
-    <h3>2. Write Query <span class="step-badge" id="step2badge">query</span></h3>
-    <label>SQL (use PARQUET_PATH as placeholder)</label>
-    <textarea id="sqlInput" placeholder="SELECT * FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) LIMIT 100"></textarea>
-    <button class="btn" id="previewBtn" onclick="previewQuery()" disabled>Preview</button>
-    <div id="queryError" class="error" style="display:none;"></div>
-    <div id="queryStats" class="stats"></div>
-    <div class="results-container" id="resultsContainer">
-      <div id="results"></div>
-    </div>
-  </div>
+  <div class="main">
+    <div class="content">
+      <!-- Dataset selector -->
+      <div style="margin-bottom: 16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+          <span class="card-label" style="margin:0;">Dataset</span>
+          <span id="schemaToggle" style="font-size:12px;color:var(--accent);cursor:pointer;display:none;" onclick="toggleSchema()">Show Schema</span>
+        </div>
+        <select id="datasetSelect" onchange="onDatasetChange()">
+          <option value="">Loading datasets...</option>
+        </select>
+      </div>
 
-  <!-- Step 3: Configure & Test Destination -->
-  <div class="panel">
-    <h3>3. Destination <span class="step-badge" id="step3badge">export</span></h3>
-    <div class="row">
+      <!-- Schema (collapsed by default) -->
+      <div id="schemaPanel" class="card" style="display:none;">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <h3>Schema <span id="schemaCount" style="color:var(--text-muted);font-weight:400;"></span></h3>
+        </div>
+        <div id="schemaList" class="schema-list"></div>
+      </div>
+
+      <!-- SQL editor -->
       <div>
-        <label>Type</label>
+        <span class="card-label">SQL Query</span>
+        <textarea id="sqlInput" placeholder="SELECT * FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) LIMIT 100"></textarea>
+        <div class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to execute</div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="btn-group">
+        <button class="btn btn-primary" id="executeBtn" onclick="previewQuery()" disabled>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>
+          Execute Query
+        </button>
+      </div>
+
+      <!-- Error -->
+      <div id="queryError" class="alert alert-error" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span id="queryErrorText"></span>
+      </div>
+
+      <!-- Stats bar -->
+      <div id="queryStats" class="stats-bar" style="display:none;">
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          <span id="rowCount">0 rows</span>
+        </div>
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="execTime">0ms</span>
+        </div>
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span id="fileCount"></span>
+        </div>
+      </div>
+
+      <!-- Results table -->
+      <div id="resultsWrap" class="results-wrap" style="display:none;">
+        <div id="results"></div>
+      </div>
+
+      <!-- Example queries -->
+      <div class="examples" id="examplesSection">
+        <h4>Example queries</h4>
+        <button class="example-btn" onclick="setQuery(this.textContent)">SELECT * FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) LIMIT 100</button>
+        <button class="example-btn" onclick="setQuery(this.textContent)">SELECT COUNT(*) as total FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true)</button>
+        <button class="example-btn" onclick="setQuery(this.textContent)">SELECT year, month, day, hour, COUNT(*) as count FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) GROUP BY year, month, day, hour ORDER BY year, month, day, hour</button>
+        <button class="example-btn" onclick="setQuery(this.textContent)">SELECT DISTINCT source_ip, COUNT(*) as hits FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) GROUP BY source_ip ORDER BY hits DESC LIMIT 20</button>
+      </div>
+    </div>
+
+    <!-- Sidebar: Export destination -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h4>Export Destination</h4>
         <select id="destType" onchange="onDestChange()">
           <option value="stdout">stdout (JSON lines)</option>
           <option value="elasticsearch">Elasticsearch</option>
           <option value="webhook">Webhook (HTTP POST)</option>
         </select>
+        <div id="destConfig"></div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" style="flex:1;" onclick="testDestination()">Test</button>
+        <button class="btn btn-success" style="flex:1;" id="exportBtn" onclick="runExport()">Export</button>
+      </div>
+
+      <div id="destResult"></div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <h4>How It Works</h4>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+          <p>This connector queries your parquet files using DuckDB over S3 and exports results to your destination.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--text-primary);">PARQUET_PATH</strong> is auto-replaced with the S3 glob path for the selected dataset.</p>
+          <p style="margin-top:8px;">Use <strong style="color:var(--text-primary);">batch</strong> mode for one-off exports or <strong style="color:var(--text-primary);">watch</strong> mode for continuous delivery.</p>
+        </div>
       </div>
     </div>
-    <div id="destConfig"></div>
-    <div style="margin-top: 8px;">
-      <button class="btn btn-secondary" onclick="testDestination()">Test Destination</button>
-      <button class="btn btn-green" id="exportBtn" onclick="runExport()">Export</button>
-    </div>
-    <div id="destResult" style="margin-top: 12px;"></div>
   </div>
 </div>
 
 <script>
 let selectedTenantId = '';
 let selectedDatasetId = '';
+let schemaVisible = false;
 
 const destFields = {
   stdout: [],
   elasticsearch: [
-    {key: 'url', label: 'Elasticsearch URL', placeholder: 'http://localhost:9200'},
-    {key: 'index', label: 'Index Name', placeholder: 'bytefreezer-logs'},
-    {key: 'username', label: 'Username (optional)', placeholder: ''},
-    {key: 'password', label: 'Password (optional)', placeholder: ''}
+    {key: 'url', label: 'URL', placeholder: 'http://localhost:9200'},
+    {key: 'index', label: 'Index', placeholder: 'bytefreezer-logs'},
+    {key: 'username', label: 'Username', placeholder: ''},
+    {key: 'password', label: 'Password', placeholder: ''}
   ],
   webhook: [
-    {key: 'url', label: 'Webhook URL', placeholder: 'https://example.com/webhook'}
+    {key: 'url', label: 'URL', placeholder: 'https://example.com/webhook'}
   ]
 };
 
@@ -120,8 +354,8 @@ async function loadDatasets() {
     if (data.error) { select.innerHTML = '<option>Error: ' + esc(data.error) + '</option>'; return; }
     if (!data.datasets || data.datasets.length === 0) { select.innerHTML = '<option>No datasets found</option>'; return; }
     select.innerHTML = '<option value="">Select a dataset...</option>' +
-      data.datasets.map(d => '<option value="' + d.dataset_id + '" data-tenant="' + d.tenant_id + '">' +
-        d.name + ' (' + d.tenant_name + ')</option>').join('');
+      data.datasets.map(d => '<option value="' + d.dataset_id + '" data-tenant="' + d.tenant_id + '" data-name="' + esc(d.name) + '">' +
+        esc(d.name) + ' (' + esc(d.tenant_name) + ')</option>').join('');
   } catch (e) {
     document.getElementById('datasetSelect').innerHTML = '<option>Failed to load: ' + esc(e.message) + '</option>';
   }
@@ -132,10 +366,61 @@ function onDatasetChange() {
   selectedDatasetId = select.value;
   const opt = select.options[select.selectedIndex];
   selectedTenantId = opt ? opt.dataset.tenant : '';
-  document.getElementById('previewBtn').disabled = !selectedDatasetId;
-  document.getElementById('step1badge').className = selectedDatasetId ? 'step-badge active' : 'step-badge';
+  document.getElementById('executeBtn').disabled = !selectedDatasetId;
   document.getElementById('results').innerHTML = '';
-  document.getElementById('queryStats').innerHTML = '';
+  document.getElementById('resultsWrap').style.display = 'none';
+  document.getElementById('queryStats').style.display = 'none';
+  document.getElementById('queryError').style.display = 'none';
+  document.getElementById('schemaToggle').style.display = selectedDatasetId ? 'inline' : 'none';
+  if (selectedDatasetId) loadSchema();
+}
+
+async function loadSchema() {
+  const panel = document.getElementById('schemaPanel');
+  const list = document.getElementById('schemaList');
+  const count = document.getElementById('schemaCount');
+  list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Loading...</div>';
+
+  try {
+    const res = await fetch('/api/v1/query', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        tenant_id: selectedTenantId,
+        dataset_id: selectedDatasetId,
+        sql: "SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM read_parquet('PARQUET_PATH', hive_partitioning=true, union_by_name=true) LIMIT 1)"
+      })
+    });
+    const data = await res.json();
+    if (data.error) {
+      list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">' + esc(data.error) + '</div>';
+      count.textContent = '';
+      return;
+    }
+    if (!data.rows || data.rows.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No schema available</div>';
+      count.textContent = '';
+      return;
+    }
+    const cols = data.columns || [];
+    const nameIdx = cols.indexOf('column_name');
+    const typeIdx = cols.indexOf('column_type');
+    list.innerHTML = data.rows.map(r => {
+      const name = Array.isArray(r) ? r[nameIdx >= 0 ? nameIdx : 0] : r.column_name;
+      const type = Array.isArray(r) ? r[typeIdx >= 0 ? typeIdx : 1] : r.column_type;
+      return '<div class="col"><span class="col-name">' + esc(String(name)) + '</span><span class="col-type">' + esc(String(type)) + '</span></div>';
+    }).join('');
+    count.textContent = '(' + data.rows.length + ')';
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">' + esc(e.message) + '</div>';
+    count.textContent = '';
+  }
+}
+
+function toggleSchema() {
+  schemaVisible = !schemaVisible;
+  document.getElementById('schemaPanel').style.display = schemaVisible ? 'block' : 'none';
+  document.getElementById('schemaToggle').textContent = schemaVisible ? 'Hide Schema' : 'Show Schema';
 }
 
 async function previewQuery() {
@@ -143,9 +428,11 @@ async function previewQuery() {
   const sql = document.getElementById('sqlInput').value.trim();
   if (!sql) return;
 
-  document.getElementById('previewBtn').innerHTML = '<span class="spinner"></span>Running...';
-  document.getElementById('previewBtn').disabled = true;
+  const btn = document.getElementById('executeBtn');
+  btn.innerHTML = '<span class="spinner"></span> Executing...';
+  btn.disabled = true;
   document.getElementById('queryError').style.display = 'none';
+  document.getElementById('queryStats').style.display = 'none';
 
   try {
     const res = await fetch('/api/v1/query', {
@@ -155,24 +442,30 @@ async function previewQuery() {
     });
     const data = await res.json();
     if (data.error) {
-      document.getElementById('queryError').textContent = data.error;
-      document.getElementById('queryError').style.display = 'block';
+      document.getElementById('queryErrorText').textContent = data.error;
+      document.getElementById('queryError').style.display = 'flex';
+      document.getElementById('resultsWrap').style.display = 'none';
     } else {
       renderResults(data);
-      document.getElementById('step2badge').className = 'step-badge active';
     }
-    document.getElementById('queryStats').innerHTML = '<span>' + (data.row_count || 0) + ' rows</span><span>' + (data.execution_time_ms || 0) + ' ms</span>';
+    document.getElementById('rowCount').textContent = (data.row_count || 0) + ' rows';
+    document.getElementById('execTime').textContent = (data.execution_time_ms || 0) + 'ms';
+    document.getElementById('fileCount').textContent = data.files_scanned ? data.files_scanned + ' files' : '';
+    document.getElementById('queryStats').style.display = 'flex';
   } catch (e) {
-    document.getElementById('queryError').textContent = e.message;
-    document.getElementById('queryError').style.display = 'block';
+    document.getElementById('queryErrorText').textContent = e.message;
+    document.getElementById('queryError').style.display = 'flex';
   }
-  document.getElementById('previewBtn').innerHTML = 'Preview';
-  document.getElementById('previewBtn').disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg> Execute Query';
+  btn.disabled = false;
 }
 
 function renderResults(data) {
+  const wrap = document.getElementById('resultsWrap');
+  const container = document.getElementById('results');
   if (!data.rows || data.rows.length === 0) {
-    document.getElementById('results').innerHTML = '<div style="color:#94a3b8;padding:16px;text-align:center;">No results</div>';
+    container.innerHTML = '<div class="results-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><div>No results found</div></div>';
+    wrap.style.display = 'block';
     return;
   }
   const cols = data.columns || Object.keys(data.rows[0]);
@@ -182,21 +475,33 @@ function renderResults(data) {
   data.rows.forEach(row => {
     html += '<tr>';
     if (Array.isArray(row)) {
-      row.forEach(cell => html += '<td>' + esc(String(cell ?? 'null')) + '</td>');
+      row.forEach(cell => {
+        if (cell === null || cell === undefined) html += '<td class="null">null</td>';
+        else html += '<td title="' + esc(String(cell)) + '">' + esc(String(cell)) + '</td>';
+      });
     } else {
-      cols.forEach(c => html += '<td>' + esc(String(row[c] ?? 'null')) + '</td>');
+      cols.forEach(c => {
+        const cell = row[c];
+        if (cell === null || cell === undefined) html += '<td class="null">null</td>';
+        else html += '<td title="' + esc(String(cell)) + '">' + esc(String(cell)) + '</td>';
+      });
     }
     html += '</tr>';
   });
   html += '</tbody></table>';
-  document.getElementById('results').innerHTML = html;
+  container.innerHTML = html;
+  wrap.style.display = 'block';
+}
+
+function setQuery(sql) {
+  document.getElementById('sqlInput').value = sql;
 }
 
 function onDestChange() {
   const type = document.getElementById('destType').value;
   const fields = destFields[type] || [];
   document.getElementById('destConfig').innerHTML = fields.map(f =>
-    '<label>' + f.label + '</label><input type="text" id="dest_' + f.key + '" placeholder="' + f.placeholder + '">'
+    '<span class="card-label">' + f.label + '</span><input type="text" id="dest_' + f.key + '" placeholder="' + f.placeholder + '">'
   ).join('');
 }
 
@@ -224,12 +529,12 @@ async function testDestination() {
     });
     const data = await res.json();
     if (data.error) {
-      resultDiv.innerHTML = '<div class="error">' + esc(data.error) + '</div>';
+      resultDiv.innerHTML = '<div class="alert alert-error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>' + esc(data.error) + '</span></div>';
     } else {
-      resultDiv.innerHTML = '<div class="success">' + esc(data.message) + '</div>';
+      resultDiv.innerHTML = '<div class="alert alert-success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>' + esc(data.message) + '</span></div>';
     }
   } catch (e) {
-    resultDiv.innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+    resultDiv.innerHTML = '<div class="alert alert-error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>' + esc(e.message) + '</span></div>';
   }
 }
 
@@ -243,7 +548,7 @@ async function runExport() {
   const resultDiv = document.getElementById('destResult');
   const btn = document.getElementById('exportBtn');
 
-  btn.innerHTML = '<span class="spinner"></span>Exporting...';
+  btn.innerHTML = '<span class="spinner"></span> Exporting...';
   btn.disabled = true;
 
   try {
@@ -260,13 +565,12 @@ async function runExport() {
     });
     const data = await res.json();
     if (data.error) {
-      resultDiv.innerHTML = '<div class="error">' + esc(data.error) + '</div>';
+      resultDiv.innerHTML = '<div class="alert alert-error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>' + esc(data.error) + '</span></div>';
     } else {
-      resultDiv.innerHTML = '<div class="success">Export complete to ' + esc(type) + ' (' + data.execution_time_ms + 'ms)</div>';
-      document.getElementById('step3badge').className = 'step-badge active';
+      resultDiv.innerHTML = '<div class="alert alert-success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>Exported ' + (data.row_count || 0) + ' rows to ' + esc(type) + ' in ' + (data.execution_time_ms || 0) + 'ms</span></div>';
     }
   } catch (e) {
-    resultDiv.innerHTML = '<div class="error">' + esc(e.message) + '</div>';
+    resultDiv.innerHTML = '<div class="alert alert-error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>' + esc(e.message) + '</span></div>';
   }
   btn.innerHTML = 'Export';
   btn.disabled = false;
@@ -274,7 +578,6 @@ async function runExport() {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// Ctrl+Enter to preview
 document.getElementById('sqlInput').addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') previewQuery();
 });
@@ -283,4 +586,4 @@ loadDatasets();
 onDestChange();
 </script>
 </body>
-</html>`
+</html>` + "\n"
