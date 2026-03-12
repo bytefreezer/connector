@@ -1,16 +1,30 @@
 # ByteFreezer Connector
 
-A starter project for exporting data from ByteFreezer parquet files into external systems. Fork it, customize it with [Claude Code](https://claude.ai/claude-code) and the [ByteFreezer MCP server](https://github.com/bytefreezer/mcp), and fit it to your exact business case.
+Data export tool for ByteFreezer parquet files. Query with DuckDB, export to Elasticsearch, Splunk, webhooks, or any custom destination.
 
 ## Overview
-
-This is not a black-box product — it's a working codebase you own and modify. The connector ships with three destinations (stdout, Elasticsearch, webhook) and a simple `Destination` interface. Need Splunk HEC, Snowflake, Kafka, or a custom internal API? Point Claude Code at this repo with the ByteFreezer MCP connected, and it has everything it needs: the destination interface pattern, MCP tools to discover your datasets and schema, and [CLAUDE.md](CLAUDE.md) with step-by-step instructions.
 
 ByteFreezer stores all ingested data as Parquet files in S3/MinIO. The Connector reads those files using DuckDB and exports filtered subsets to external systems. Instead of sending everything to your SIEM, export only the 5% you need for active investigation.
 
 ```
 packer --> parquet (S3/MinIO) --> [CONNECTOR] --> Elasticsearch / Splunk / webhook
 ```
+
+**Web UI:** `http://localhost:8090` — explore datasets, write queries, preview results, configure export destinations.
+
+This is not a black-box product — it's a working codebase you own and modify. The connector ships with three destinations (stdout, Elasticsearch, webhook) and a simple `Destination` interface. Need Splunk HEC, Snowflake, Kafka, or a custom internal API? Point Claude Code at this repo with the ByteFreezer MCP connected, and it has everything it needs: the destination interface pattern, MCP tools to discover your datasets and schema, and [CLAUDE.md](CLAUDE.md) with step-by-step instructions.
+
+## Query vs Connector
+
+ByteFreezer includes two tools for querying data. Use both or either:
+
+| | Query Service (port 8000) | Connector (port 8090) |
+|---|---|---|
+| **Purpose** | Interactive analysis | Data export to external systems |
+| **AI/NL queries** | Yes (Anthropic, OpenAI, Ollama) | No |
+| **Export to SIEM** | No | Yes (Elasticsearch, Splunk, webhook) |
+| **Batch/watch modes** | No | Yes — scheduled, cursor-tracked export |
+| **Best for** | Ad-hoc investigation | Continuous SIEM feed, alerting pipelines |
 
 ## Modes
 
@@ -22,13 +36,28 @@ packer --> parquet (S3/MinIO) --> [CONNECTOR] --> Elasticsearch / Splunk / webho
 
 ## Quick Start
 
+### On-Prem (Docker Compose)
+
+The connector is included in the ByteFreezer on-prem Docker Compose stack. After
+deploying the full stack, the connector web UI is available at:
+
+```
+http://<your-host>:8090
+```
+
+To run a one-shot query from the command line:
+
+```bash
+docker exec -w /app bytefreezer-connector ./bytefreezer-connector --mode batch
+```
+
 ### Binary
 
 ```bash
 go build -o bytefreezer-connector .
 ```
 
-### Docker
+### Standalone Docker
 
 ```bash
 docker pull ghcr.io/bytefreezer/bytefreezer-connector:latest
