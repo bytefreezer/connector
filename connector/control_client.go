@@ -224,7 +224,7 @@ func BuildInstanceID() string {
 		hostname = "unknown"
 	}
 	hostHostname := os.Getenv("HOST_HOSTNAME")
-	if hostHostname != "" {
+	if hostHostname != "" && hostHostname != hostname {
 		if _, err := os.Stat("/.dockerenv"); err == nil {
 			return fmt.Sprintf("%s:%s", hostHostname, hostname)
 		}
