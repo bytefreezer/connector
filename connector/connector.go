@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -28,6 +29,12 @@ type Connector struct {
 
 // NewConnector creates a new connector instance
 func NewConnector(client *ControlClient, cursor *Cursor, dest Destination, tenantID, datasetID, querySQL string, batchSize int) (*Connector, error) {
+	// Ensure writable extension directory exists (default $HOME/.duckdb/ may not be writable in containers)
+	duckdbHome := "/tmp/duckdb"
+	if err := os.MkdirAll(duckdbHome, 0755); err != nil {
+		log.Warnf("Failed to create DuckDB home directory %s: %v", duckdbHome, err)
+	}
+
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open DuckDB: %w", err)
@@ -35,6 +42,7 @@ func NewConnector(client *ControlClient, cursor *Cursor, dest Destination, tenan
 
 	// Install and load httpfs for S3 access
 	for _, stmt := range []string{
+		fmt.Sprintf("SET home_directory='%s'", duckdbHome),
 		"INSTALL httpfs",
 		"LOAD httpfs",
 	} {
