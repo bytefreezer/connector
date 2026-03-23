@@ -336,6 +336,18 @@ kbd {
           <p style="margin-top:8px;">Use <strong style="color:var(--text-primary);">batch</strong> mode for one-off exports or <strong style="color:var(--text-primary);">watch</strong> mode for continuous delivery.</p>
         </div>
       </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <h4>Build Your Own</h4>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+          <p>This connector is a starter project. Clone it, point Claude Code at it, and ask it to add a Splunk HEC destination or a custom query pipeline. The CLAUDE.md in the repo has everything Claude needs.</p>
+          <p style="margin-top:8px;"><code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--text-primary);">claude mcp add bytefreezer ...</code></p>
+          <p style="margin-top:4px;font-style:italic;color:var(--text-muted);">"Add a Splunk HEC destination to the connector"</p>
+          <p style="margin-top:8px;"><a href="https://github.com/bytefreezer/connector" target="_blank" style="color:var(--accent);text-decoration:none;">github.com/bytefreezer/connector</a></p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
