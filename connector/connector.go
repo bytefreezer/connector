@@ -282,7 +282,7 @@ func (c *Connector) GetParquetPath(ctx context.Context) (string, error) {
 	// Try today, then yesterday
 	now := time.Now().UTC()
 	for _, d := range []time.Time{now, now.AddDate(0, 0, -1)} {
-		path := fmt.Sprintf("%s/year=%d/month=%02d/day=%d/*.parquet*", base, d.Year(), d.Month(), d.Day())
+		path := fmt.Sprintf("%s/year=%d/month=%02d/day=%d/**/*.parquet*", base, d.Year(), d.Month(), d.Day())
 		if c.hasParquetFiles(ctx, path) {
 			log.Infof("Using partition %d-%02d-%02d", d.Year(), d.Month(), d.Day())
 			return path, nil
