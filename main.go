@@ -224,6 +224,7 @@ func setupInteractiveRoutes(mux *http.ServeMux, cfg *config.Config, client *conn
 			DatasetID   string `json:"dataset_id"`
 			Name        string `json:"name"`
 			ParquetPath string `json:"parquet_path"`
+			Testing     bool   `json:"testing"`
 		}
 		var all []datasetInfo
 
@@ -244,6 +245,7 @@ func setupInteractiveRoutes(mux *http.ServeMux, cfg *config.Config, client *conn
 					DatasetID:   d.ID,
 					Name:        d.Name,
 					ParquetPath: ppath,
+					Testing:     d.Testing,
 				})
 			}
 		}

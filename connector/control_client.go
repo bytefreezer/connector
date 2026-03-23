@@ -31,10 +31,12 @@ type Tenant struct {
 
 // Dataset represents a dataset
 type Dataset struct {
-	ID       string `json:"id"`
-	TenantID string `json:"tenant_id"`
-	Name     string `json:"name"`
-	Active   bool   `json:"active"`
+	ID           string `json:"id"`
+	TenantID     string `json:"tenant_id"`
+	Name         string `json:"name"`
+	Active       bool   `json:"active"`
+	Testing      bool   `json:"testing"`
+	LocalStorage bool   `json:"local_storage"`
 }
 
 // S3Credentials for accessing parquet files

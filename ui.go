@@ -233,6 +233,17 @@ kbd {
         </select>
       </div>
 
+      <!-- Testing mode warning -->
+      <div id="testingWarning" style="display:none; background:var(--warning-bg); border:1px solid var(--warning); border-radius:8px; padding:12px 16px; margin-bottom:8px;">
+        <div style="display:flex; align-items:flex-start; gap:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style="font-size:13px;">
+            <div style="font-weight:600; color:var(--warning); margin-bottom:2px;">Testing Mode</div>
+            <div style="color:var(--text-secondary);">This dataset has testing enabled. Packer produces many small parquet files (~1 per 15 seconds) instead of large accumulated batches. Queries scanning many files will be slow. For production performance, disable testing mode in the control plane.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Schema (collapsed by default) -->
       <div id="schemaPanel" class="card" style="display:none;">
         <div class="card-header">
@@ -358,8 +369,8 @@ async function loadDatasets() {
     if (data.error) { select.innerHTML = '<option>Error: ' + esc(data.error) + '</option>'; return; }
     if (!data.datasets || data.datasets.length === 0) { select.innerHTML = '<option>No datasets found</option>'; return; }
     select.innerHTML = '<option value="">Select a dataset...</option>' +
-      data.datasets.map(d => '<option value="' + d.dataset_id + '" data-tenant="' + d.tenant_id + '" data-name="' + esc(d.name) + '" data-path="' + esc(d.parquet_path || '') + '">' +
-        esc(d.name) + ' (' + esc(d.tenant_name) + ')</option>').join('');
+      data.datasets.map(d => '<option value="' + d.dataset_id + '" data-tenant="' + d.tenant_id + '" data-name="' + esc(d.name) + '" data-path="' + esc(d.parquet_path || '') + '" data-testing="' + (d.testing ? '1' : '') + '">' +
+        esc(d.name) + (d.testing ? ' [testing]' : '') + ' (' + esc(d.tenant_name) + ')</option>').join('');
   } catch (e) {
     document.getElementById('datasetSelect').innerHTML = '<option>Failed to load: ' + esc(e.message) + '</option>';
   }
@@ -371,6 +382,8 @@ function onDatasetChange() {
   const opt = select.options[select.selectedIndex];
   selectedTenantId = opt ? opt.dataset.tenant : '';
   selectedParquetPath = opt ? (opt.dataset.path || '') : '';
+  const isTesting = opt ? opt.dataset.testing === '1' : false;
+  document.getElementById('testingWarning').style.display = isTesting ? 'block' : 'none';
   document.getElementById('executeBtn').disabled = !selectedDatasetId;
   document.getElementById('results').innerHTML = '';
   document.getElementById('resultsWrap').style.display = 'none';
