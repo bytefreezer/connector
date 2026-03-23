@@ -268,14 +268,39 @@ func (c *Connector) ConfigureDataset(ctx context.Context, tenantID, datasetID st
 	return c.configureS3(creds)
 }
 
-// GetParquetPath returns the S3 parquet glob path for the current dataset
+// GetParquetPath returns the S3 parquet glob path for the current dataset.
+// It tries the latest day partition first (today, then yesterday) to avoid
+// slow full-glob scans across thousands of files. Falls back to full glob
+// if no recent partitions have data.
 func (c *Connector) GetParquetPath(ctx context.Context) (string, error) {
 	creds, err := c.controlClient.GetS3Credentials(ctx, c.tenantID, c.datasetID)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("s3://%s/%s/%s/data/parquet/**/*.parquet",
-		creds.Bucket, c.tenantID, c.datasetID), nil
+	base := fmt.Sprintf("s3://%s/%s/%s/data/parquet", creds.Bucket, c.tenantID, c.datasetID)
+
+	// Try today, then yesterday
+	now := time.Now().UTC()
+	for _, d := range []time.Time{now, now.AddDate(0, 0, -1)} {
+		path := fmt.Sprintf("%s/year=%d/month=%02d/day=%d/*.parquet*", base, d.Year(), d.Month(), d.Day())
+		count, err := c.countParquetFiles(ctx, path)
+		if err == nil && count > 0 {
+			log.Infof("Using partition %d-%02d-%02d (%d files)", d.Year(), d.Month(), d.Day(), count)
+			return path, nil
+		}
+	}
+
+	// Fallback to full glob
+	log.Warn("No recent partitions found, using full glob (may be slow)")
+	return base + "/**/*.parquet*", nil
+}
+
+func (c *Connector) countParquetFiles(ctx context.Context, path string) (int, error) {
+	row := c.db.QueryRowContext(ctx, fmt.Sprintf(
+		"SELECT COUNT(*) FROM glob('%s')", path))
+	var count int
+	err := row.Scan(&count)
+	return count, err
 }
 
 func (c *Connector) configureS3(creds *S3Credentials) error {
