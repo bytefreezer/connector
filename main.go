@@ -251,6 +251,29 @@ func setupInteractiveRoutes(mux *http.ServeMux, cfg *config.Config, client *conn
 		writeJSON(w, 200, map[string]interface{}{"datasets": all})
 	})
 
+	// Resolve the optimal parquet path for a dataset (scoped to latest partition)
+	mux.HandleFunc("GET /api/v1/parquet-path", func(w http.ResponseWriter, r *http.Request) {
+		tenantID := r.URL.Query().Get("tenant_id")
+		datasetID := r.URL.Query().Get("dataset_id")
+		if tenantID == "" || datasetID == "" {
+			writeJSON(w, 400, map[string]string{"error": "tenant_id and dataset_id are required"})
+			return
+		}
+
+		if err := conn.ConfigureDataset(r.Context(), tenantID, datasetID); err != nil {
+			writeJSON(w, 500, map[string]string{"error": "Failed to configure dataset: " + err.Error()})
+			return
+		}
+
+		path, err := conn.GetParquetPath(r.Context())
+		if err != nil {
+			writeJSON(w, 500, map[string]string{"error": "Failed to resolve path: " + err.Error()})
+			return
+		}
+
+		writeJSON(w, 200, map[string]interface{}{"parquet_path": path})
+	})
+
 	// Execute SQL query (preview data)
 	mux.HandleFunc("POST /api/v1/query", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {

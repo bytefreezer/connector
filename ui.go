@@ -377,11 +377,23 @@ function onDatasetChange() {
   document.getElementById('queryStats').style.display = 'none';
   document.getElementById('queryError').style.display = 'none';
   document.getElementById('schemaToggle').style.display = selectedDatasetId ? 'inline' : 'none';
-  if (selectedDatasetId && selectedParquetPath) {
-    document.getElementById('sqlInput').value = defaultSQL(selectedParquetPath);
-    updateExampleQueries(selectedParquetPath);
+  if (selectedDatasetId && selectedTenantId) {
+    // Resolve optimal partition-scoped path from server
+    fetch('/api/v1/parquet-path?tenant_id=' + encodeURIComponent(selectedTenantId) + '&dataset_id=' + encodeURIComponent(selectedDatasetId))
+      .then(r => r.json())
+      .then(data => {
+        if (data.parquet_path) {
+          selectedParquetPath = data.parquet_path;
+        }
+        document.getElementById('sqlInput').value = defaultSQL(selectedParquetPath);
+        updateExampleQueries(selectedParquetPath);
+      })
+      .catch(() => {
+        document.getElementById('sqlInput').value = defaultSQL(selectedParquetPath);
+        updateExampleQueries(selectedParquetPath);
+      });
+    loadSchema();
   }
-  if (selectedDatasetId) loadSchema();
 }
 
 function updateExampleQueries(path) {
