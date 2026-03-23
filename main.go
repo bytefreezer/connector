@@ -250,7 +250,8 @@ func setupInteractiveRoutes(mux *http.ServeMux, cfg *config.Config, client *conn
 			}
 		}
 
-		writeJSON(w, 200, map[string]interface{}{"datasets": all})
+		dashboardURL := strings.Replace(cfg.Control.URL, "://api.", "://", 1)
+		writeJSON(w, 200, map[string]interface{}{"datasets": all, "dashboard_url": dashboardURL})
 	})
 
 	// Resolve the optimal parquet path for a dataset (scoped to latest partition)
