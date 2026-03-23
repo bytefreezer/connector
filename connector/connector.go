@@ -283,9 +283,8 @@ func (c *Connector) GetParquetPath(ctx context.Context) (string, error) {
 	now := time.Now().UTC()
 	for _, d := range []time.Time{now, now.AddDate(0, 0, -1)} {
 		path := fmt.Sprintf("%s/year=%d/month=%02d/day=%d/*.parquet*", base, d.Year(), d.Month(), d.Day())
-		count, err := c.countParquetFiles(ctx, path)
-		if err == nil && count > 0 {
-			log.Infof("Using partition %d-%02d-%02d (%d files)", d.Year(), d.Month(), d.Day(), count)
+		if c.hasParquetFiles(ctx, path) {
+			log.Infof("Using partition %d-%02d-%02d", d.Year(), d.Month(), d.Day())
 			return path, nil
 		}
 	}
@@ -295,12 +294,11 @@ func (c *Connector) GetParquetPath(ctx context.Context) (string, error) {
 	return base + "/**/*.parquet*", nil
 }
 
-func (c *Connector) countParquetFiles(ctx context.Context, path string) (int, error) {
+func (c *Connector) hasParquetFiles(ctx context.Context, path string) bool {
 	row := c.db.QueryRowContext(ctx, fmt.Sprintf(
-		"SELECT COUNT(*) FROM glob('%s')", path))
-	var count int
-	err := row.Scan(&count)
-	return count, err
+		"SELECT 1 FROM read_parquet('%s', hive_partitioning=true, union_by_name=true) LIMIT 1", path))
+	var dummy int
+	return row.Scan(&dummy) == nil
 }
 
 func (c *Connector) configureS3(creds *S3Credentials) error {
