@@ -269,22 +269,31 @@ func (c *Connector) ConfigureDataset(ctx context.Context, tenantID, datasetID st
 }
 
 // GetParquetPath returns the S3 parquet glob path for the current dataset.
-// It tries the latest day partition first (today, then yesterday) to avoid
-// slow full-glob scans across thousands of files. Falls back to full glob
-// if no recent partitions have data.
+// Tries the narrowest recent partition first: current hour, previous hour,
+// today, yesterday. Falls back to full glob if nothing found.
 func (c *Connector) GetParquetPath(ctx context.Context) (string, error) {
 	creds, err := c.controlClient.GetS3Credentials(ctx, c.tenantID, c.datasetID)
 	if err != nil {
 		return "", err
 	}
 	base := fmt.Sprintf("s3://%s/%s/%s/data/parquet", creds.Bucket, c.tenantID, c.datasetID)
-
-	// Try today, then yesterday
 	now := time.Now().UTC()
+
+	// Try current hour, then previous hour (narrowest — ~60 files max)
+	for _, h := range []time.Time{now, now.Add(-1 * time.Hour)} {
+		path := fmt.Sprintf("%s/year=%d/month=%02d/day=%d/hour=%02d/*.parquet*",
+			base, h.Year(), h.Month(), h.Day(), h.Hour())
+		if c.hasParquetFiles(ctx, path) {
+			log.Infof("Using partition %d-%02d-%02d hour %02d", h.Year(), h.Month(), h.Day(), h.Hour())
+			return path, nil
+		}
+	}
+
+	// Try today, then yesterday (broader — all hours in a day)
 	for _, d := range []time.Time{now, now.AddDate(0, 0, -1)} {
 		path := fmt.Sprintf("%s/year=%d/month=%02d/day=%d/**/*.parquet*", base, d.Year(), d.Month(), d.Day())
 		if c.hasParquetFiles(ctx, path) {
-			log.Infof("Using partition %d-%02d-%02d", d.Year(), d.Month(), d.Day())
+			log.Infof("Using partition %d-%02d-%02d (full day)", d.Year(), d.Month(), d.Day())
 			return path, nil
 		}
 	}
